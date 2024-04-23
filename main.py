@@ -15,6 +15,7 @@ def fetch_data_from_api(api_url):
     except requests.exceptions.RequestException as e:
         print(f"Error fetching data: {e}")
         return None
+    
 
 def main():
     api_url = "http://127.0.0.1:8000/detect_corrosion/"  # Replace this with the actual API URL

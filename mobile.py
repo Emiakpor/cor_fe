@@ -1,50 +1,89 @@
-import os
-import requests
+import json
 from kivy.app import App
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.uix.label import Label
-from kivy.uix.filechooser import FileChooserIconView
+from kivy.uix.button import Button
+from kivy.uix.filechooser import FileChooserListView
+from kivy.utils import platform
 
-class ImageUploaderApp(App):
+import requests
+
+class PictureUploader(App):
     def build(self):
-        layout = BoxLayout(orientation='vertical')
-        self.image1 = Image(source='default_image.png', size_hint=(1, 0.4))
-        layout.add_widget(self.image1)
-        self.file_chooser1 = FileChooserIconView(path='.')
-        layout.add_widget(self.file_chooser1)
+        layout = BoxLayout(orientation='vertical', spacing=10, padding=10)
+        # layout = GridLayout(cols=1, spacing=10, padding=10)
+        # File chooser
+        self.file_chooser = FileChooserListView()
+        layout.add_widget(self.file_chooser)
 
-        self.image2 = Image(source='default_image.png', size_hint=(1, 0.4))
-        layout.add_widget(self.image2)
-        self.file_chooser2 = FileChooserIconView(path='.')
-        layout.add_widget(self.file_chooser2)
+         # Button to upload picture
+        button_upload = Button(text="Upload Picture",   
+                            size_hint_y=None, height=40, 
+                            on_press=self.upload_picture)
+        layout.add_widget(button_upload)
 
-        btn_upload = Button(text='Upload Images', size_hint=(1, 0.1))
-        btn_upload.bind(on_press=self.upload_images)
-        layout.add_widget(btn_upload)
-        self.response_label = Label(text='', size_hint=(1, 0.1))
+        # Image display
+        self.image = Image(allow_stretch=True,
+                           size_hint_y= None, height= 250)
+        layout.add_widget(self.image)       
+
+        button_send = Button(text="Send Picture",  
+                            size_hint_y=None, height=40,  
+                            on_press=self.send_picture)
+        layout.add_widget(button_send)
+
+        # Label to display API response
+        self.response_label = Label(text='',size_hint_y=None, height=40)
         layout.add_widget(self.response_label)
-        return layout
 
-    def upload_images(self, instance):
-        if self.file_chooser1.selection and self.file_chooser2.selection:
-            file_path1 = self.file_chooser1.selection[0]
-            file_path2 = self.file_chooser2.selection[0]
-            url = 'YOUR_API_ENDPOINT'
-            files = {'image1': open(file_path1, 'rb'), 'image2': open(file_path2, 'rb')}
-            try:
-                response = requests.post(url, files=files)
+        return layout
+    
+    
+    def upload_picture(self, instance):
+        # Get the path of the selected picture
+        self.selected_path = self.file_chooser.selection and self.file_chooser.selection[0] or None
+
+        if self.selected_path:
+
+            self.image.source = self.selected_path
+
+           
+    def send_picture(self, instance):
+
+        if self.selected_path:
+            # Read the picture
+            with open(self.selected_path, 'rb') as file:
+                picture_data = file.read()
+
+                 # Send the picture to the API
+                api_url = 'http://127.0.0.1:8000/is_image_corrosive/'
+                files = {'image': picture_data}
+                response = requests.post(api_url, files=files)
+
+                # Display the JSON response
                 if response.status_code == 200:
-                    # Assuming API returns JSON response
-                    result = response.json()
-                    self.response_label.text = result.get('message', 'Unknown response')
+                    response_data = response.json()
+                    print(response_data)
+                    data = json.loads(response_data)
+                    print(data)
+                    self.response_label.text =  data['message']
                 else:
-                    self.response_label.text = 'Failed to upload images'
-            except Exception as e:
-                self.response_label.text = f'Error: {str(e)}'
+                    self.response_label.text = f'Error: {response.status_code} - {response.reason}'
+
+    def get_initial_directory(self):
+        # Determine the initial directory based on the platform
+        if platform == 'win':
+            return 'C:/Users/YourUsername/Pictures'  # Change to your desired directory
+        elif platform == 'linux':
+            return '/home/YourUsername/Pictures'  # Change to your desired directory
+        elif platform == 'macosx':
+            return '/Users/YourUsername/Pictures'  # Change to your desired directory
         else:
-            self.response_label.text = 'Please select two images to upload'
+            # For other platforms, you can set a default directory or handle it accordingly
+            return '/'
+
 
 if __name__ == '__main__':
-    ImageUploaderApp().run()
+    PictureUploader().run()
