@@ -10,8 +10,10 @@ from kivy.utils import platform
 
 import requests
 
-class PictureUploader(App):
+class CorrosionDetection(App):
+    title = "Corrossion Detection"
     def build(self):
+        
         layout = BoxLayout(orientation='vertical', spacing=10, padding=10)
         # layout = GridLayout(cols=1, spacing=10, padding=10)
         # File chooser
@@ -53,24 +55,21 @@ class PictureUploader(App):
     def send_picture(self, instance):
 
         if self.selected_path:
-            # Read the picture
-            with open(self.selected_path, 'rb') as file:
-                picture_data = file.read()
 
                  # Send the picture to the API
-                api_url = 'http://127.0.0.1:8000/is_image_corrosive/'
-                files = {'image': picture_data}
-                response = requests.post(api_url, files=files)
+            api_url = 'http://127.0.0.1:8000/is_image_corrosive/'
 
-                # Display the JSON response
-                if response.status_code == 200:
-                    response_data = response.json()
-                    print(response_data)
-                    data = json.loads(response_data)
-                    print(data)
-                    self.response_label.text =  data['message']
-                else:
-                    self.response_label.text = f'Error: {response.status_code} - {response.reason}'
+            files = {'image': open(self.selected_path, 'rb')}
+            response = requests.post(api_url, files=files)
+
+               # Display the JSON response
+            if response.status_code == 200:
+                response_data = response.json()
+                data = json.loads(response_data)
+                self.response_label.text =  data['upload_image_corrosive_status']
+            else:
+                self.response_label.text = f'Error: {response.status_code} - {response.reason}'
+
 
     def get_initial_directory(self):
         # Determine the initial directory based on the platform
@@ -86,4 +85,4 @@ class PictureUploader(App):
 
 
 if __name__ == '__main__':
-    PictureUploader().run()
+    CorrosionDetection().run()
